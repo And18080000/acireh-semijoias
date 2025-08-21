@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACIREH - Semi Joias em Dourado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SDK do Mercado Pago -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" id="manifest">
+    <!-- Theme Color for PWA -->
+    <meta name="theme-color" content="#D4AF37">
+    <link id="favicon" rel="icon" href="favicon.ico" type="image/x-icon">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap');
+        
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .title-font {
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(212, 175, 55, 0.2);
+        }
+        
+        .video-background {
+            position: relative;
+            width: 100%;
+            height: 80vh;
+            overflow: hidden;
+        }
+        
+        .video-background video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            object-fit: cover;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            border-color: #D4AF37 !important;
+            box-shadow: 0 0 0 1px #D4AF37 !important;
+        }
+        
+        .checkout-tab.active {
+            border-color: #D4AF37;
+            color: #D4AF37;
+            font-weight: 600;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #D4AF37;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b38f2a;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #D4AF37;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scroller Animation */
+        .scroller {
+            max-width: 100%;
+        }
+        .scroller[data-animated="true"] {
+            overflow: hidden;
+            -webkit-mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+            mask: linear-gradient(90deg, transparent, white 20%, white 80%, transparent);
+        }
+        .scroller__inner {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 1.5rem; /* Corresponds to gap-6 in Tailwind */
+            width: max-content;
+        }
+        .scroller[data-animated="true"] .scroller__inner {
+            animation: scroll 40s linear infinite;
+        }
+        .scroller[data-animated="false"] .scroller__inner {
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        .scroller:hover .scroller__inner {
+            animation-play-state: paused;
+        }
+        @keyframes scroll {
+            to {
+                transform: translate(calc(-50% - 0.75rem)); /* Half the gap */
+            }
+        }
+        .scroller .product-card, .scroller .image-item {
+            width: 280px;  
+        }
+        
+        .image-item {
+            transition: all 0.3s ease;
+        }
+        
+        .image-item:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+    <!-- Top Bar -->
+    <div class="bg-gray-900 text-white py-2 px-4">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+            <div id="top-bar-contacts" class="flex flex-wrap justify-center md:justify-start space-x-4 text-sm mb-2 md:mb-0">
+                <!-- Contatos carregados do Firebase -->
+            </div>
+            <div class="flex flex-wrap justify-center md:justify-end space-x-4 text-sm">
+                <a href="#" class="hover:text-amber-300"><i class="fas fa-truck mr-1"></i> Entrega em todo o Brasil</a>
+                <a href="#" class="hover:text-amber-300"><i class="fas fa-shield-alt mr-1"></i> Compra Segura</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <!-- Logo -->
+                <div class="flex items-center mb-4 md:mb-0">
+                    <img id="header-logo" src="https://res.cloudinary.com/dae7br7lb/image/upload/v1754489172/1_ntperj.png" alt="ACIREH Logo" class="h-12 md:h-16">
+                </div>
+                
+                <!-- Search Bar -->
+                <form id="desktopSearchForm" class="hidden md:flex flex-1 mx-0 md:mx-8 w-full md:w-auto">
+                    <div class="flex w-full max-w-xl">
+                        <input type="text" id="desktopSearchInput" placeholder="Pesquisar produtos..." class="w-full px-4 py-2 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-full focus:outline-none dark:bg-gray-700 dark:text-white">
+                        <button type="submit" class="px-4 bg-amber-600 text-white rounded-r-full hover:bg-amber-700">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Icons -->
+                <div class="flex items-center space-x-4 md:space-x-6">
+                    <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm-.707 10.607a1 1 0 011.414 0l.707-.707a1 1 0 111.414 1.414l-.707.707a1 1 0 01-1.414 0zM1 11a1 1 0 100-2H0a1 1 0 100 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button id="wishlistBtn" class="text-gray-700 dark:text-gray-300 hover:text-amber-600 relative">
+                        <i class="fas fa-heart text-lg md:text-xl"></i>
+                        <span id="wishlistCount" class="absolute -top-2 -right-2 bg-amber-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                    </button>
+                    <button id="cartBtn" class="text-gray-700 dark:text-gray-300 hover:text-amber-600 relative">
+                        <i class="fas fa-shopping-cart text-lg md:text-xl"></i>
+                        <span class="cart-count absolute -top-2 -right-2 bg-amber-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <nav id="main-nav" class="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center">
+                    <div class="hidden md:flex space-x-4 lg:space-x-8">
+                        <a href="#page-Destaques" class="nav-link-category py-3 md:py-4 text-gray-800 dark:text-gray-200 font-medium border-b-2 border-transparent hover:border-amber-600" data-category="Destaques">Home</a>
+                        <div class="group relative">
+                            <button class="py-3 md:py-4 text-gray-800 dark:text-gray-200 font-medium border-b-2 border-transparent hover:border-amber-600 flex items-center">
+                                Categorias <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                            </button>
+                            <div id="desktop-categories-dropdown" class="absolute left-0 mt-0 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md py-2 z-10 hidden group-hover:block">
+                                <!-- Dynamic Categories for Desktop -->
+                            </div>
+                        </div>
+                        <a href="#page-Novidades" class="nav-link-category py-3 md:py-4 text-gray-800 dark:text-gray-200 font-medium border-b-2 border-transparent hover:border-amber-600" data-category="Novidades">Novidades</a>
+                        <a href="#page-Promoções" class="nav-link-category py-3 md:py-4 text-gray-800 dark:text-gray-200 font-medium border-b-2 border-transparent hover:border-amber-600" data-category="Promoções">Promoções</a>
+                        <a href="#page-Sobre Nós" class="nav-link-category py-3 md:py-4 text-gray-800 dark:text-gray-200 font-medium border-b-2 border-transparent hover:border-amber-600" data-category="Sobre Nós">Sobre Nós</a>
+                        <a href="#footer-contact" class="nav-link-category py-3 md:py-4 text-gray-800 dark:text-gray-200 font-medium border-b-2 border-transparent hover:border-amber-600" data-category="footer-contact">Contato</a>
+                    </div>
+                    <button class="md:hidden py-3 text-gray-800 dark:text-gray-200" id="mobileMenuBtn">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 hidden overflow-y-auto">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center mb-8">
+                <img id="mobile-menu-logo" src="https://res.cloudinary.com/dae7br7lb/image/upload/v1754489172/1_ntperj.png" alt="ACIREH Logo" class="h-12">
+                <button id="closeMobileMenu" class="text-gray-800 dark:text-gray-200">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+             <form id="mobileSearchForm" class="mb-6">
+                <div class="relative">
+                    <input type="text" id="mobileSearchInput" placeholder="Pesquisar produtos..." class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-full dark:bg-gray-800 dark:text-white">
+                    <button type="submit" class="absolute right-0 top-0 h-full px-5 text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+            <nav class="flex flex-col space-y-4">
+                <a href="#page-Destaques" class="nav-link-category text-gray-800 dark:text-gray-200 font-medium py-2 border-b border-gray-100 dark:border-gray-800" data-category="Destaques">Home</a>
+                <div>
+                    <button class="flex justify-between items-center w-full text-gray-800 dark:text-gray-200 font-medium py-2 border-b border-gray-100 dark:border-gray-800" id="mobileCategoriesBtn">
+                        Categorias <i class="fas fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="mobile-categories-list" class="pl-4 hidden mt-2 space-y-2">
+                        <!-- Dynamic Categories for Mobile -->
+                    </div>
+                </div>
+                <a href="#page-Novidades" class="nav-link-category text-gray-800 dark:text-gray-200 font-medium py-2 border-b border-gray-100 dark:border-gray-800" data-category="Novidades">Novidades</a>
+                <a href="#page-Promoções" class="nav-link-category text-gray-800 dark:text-gray-200 font-medium py-2 border-b border-gray-100 dark:border-gray-800" data-category="Promoções">Promoções</a>
+                <a href="#page-Sobre Nós" class="nav-link-category text-gray-800 dark:text-gray-200 font-medium py-2 border-b border-gray-100 dark:border-gray-800" data-category="Sobre Nós">Sobre Nós</a>
+                <a href="#footer-contact" class="nav-link-category text-gray-800 dark:text-gray-200 font-medium py-2 border-b border-gray-100 dark:border-gray-800" data-category="footer-contact">Contato</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Hero Section with Video Background -->
+    <section class="relative">
+        <div class="video-background">
+            <video autoplay muted loop playsinline id="hero-video">
+                <!-- Source will be set by Firebase -->
+            </video>
+            <div class="video-overlay"></div>
+            <div class="absolute inset-0 flex items-center z-10">
+                <div class="container mx-auto px-4">
+                    <div class="max-w-xl">
+                        <h1 id="hero-title" class="title-font text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4"></h1>
+                        <p id="hero-subtitle" class="text-white text-lg mb-6"></p>
+                        <a href="#page-Destaques" class="inline-block bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-3 rounded-full transition duration-300">Comprar Agora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main id="main-content">
+        <!-- Static Pages Container -->
+        <div id="static-pages-container">
+            <!-- Products Section for Destaques -->
+            <section id="page-Destaques" class="page-content py-12 bg-white dark:bg-gray-900">
+                <div class="container mx-auto px-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-8">
+                        <h2 class="title-font text-3xl font-bold text-gray-800 dark:text-white mb-4 sm:mb-0">Produtos em Destaque</h2>
+                    </div>
+                    <div class="scroller" data-animated="true">
+                        <div class="scroller__inner" id="product-list-Destaques">
+                            <!-- Highlight products injected here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Products Section for Novidades -->
+            <section id="page-Novidades" class="page-content py-12 bg-white dark:bg-gray-900 hidden">
+                <div class="container mx-auto px-4">
+                    <h2 class="title-font text-3xl font-bold text-gray-800 dark:text-white mb-8">Novidades</h2>
+                    <div id="product-list-Novidades" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+                </div>
+            </section>
+            <!-- Products Section for Promoções -->
+            <section id="page-Promoções" class="page-content py-12 bg-white dark:bg-gray-900 hidden">
+                <div class="container mx-auto px-4">
+                    <h2 class="title-font text-3xl font-bold text-gray-800 dark:text-white mb-8">Promoções</h2>
+                    <div id="product-list-Promoções" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+                </div>
+            </section>
+            <!-- About Us Section -->
+            <section id="page-Sobre Nós" class="page-content py-12 bg-white dark:bg-gray-900 hidden">
+                <div class="container mx-auto px-4">
+                    <div class="max-w-4xl mx-auto" id="about-us-content">
+                        <!-- Conteúdo "Sobre Nós" carregado do Firebase -->
+                    </div>
+                </div>
+            </section>
+            <!-- Search Results Section -->
+            <section id="page-Pesquisa" class="page-content py-12 bg-white dark:bg-gray-900 hidden">
+                <div class="container mx-auto px-4">
+                    <h2 class="title-font text-3xl font-bold text-gray-800 dark:text-white mb-8">Resultados da Pesquisa para "<span id="search-term"></span>"</h2>
+                    <div id="product-list-Pesquisa" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Dynamic Category Pages Container -->
+        <div id="dynamic-category-pages-container">
+            <!-- Category pages will be injected here by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Testimonials -->
+    <section class="py-12 bg-gray-50 dark:bg-gray-900">
+        <div class="container mx-auto px-4">
+            <h2 class="title-font text-3xl font-bold text-center text-gray-800 dark:text-white mb-10">O Que Nossos Clientes Dizem</h2>
+            <div id="testimonials-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                <!-- Testemunhos carregados do Firebase -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Jewels Section -->
+    <section class="py-12 bg-white dark:bg-gray-900">
+        <div class="container mx-auto px-4">
+            <h2 class="title-font text-3xl font-bold text-center text-gray-800 dark:text-white mb-10">Nossas Joias</h2>
+            <div class="scroller" data-animated="true">
+                <div id="our-jewels-scroller-inner" class="scroller__inner">
+                    <!-- Products will be injected here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section id="newsletter-section" class="py-12 bg-amber-600">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="title-font text-3xl font-bold text-white mb-4">Entre para o Nosso Grupo VIP</h2>
+            <p class="text-white mb-6 max-w-2xl mx-auto">Receba novidades, promoções exclusivas e descontos especiais diretamente no seu WhatsApp.</p>
+            <a href="#" id="whatsapp-group-link" target="_blank" class="inline-block bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-full font-medium transition duration-300">
+                <i class="fab fa-whatsapp mr-2"></i> Entrar no Grupo
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer-contact" class="bg-gray-900 text-white pt-12 pb-6">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <img id="footer-logo" src="https://res.cloudinary.com/dae7br7lb/image/upload/v1754489172/1_ntperj.png" alt="ACIREH Logo" class="h-12 mb-4">
+                    <p class="text-gray-400 mb-4">Semi joias em dourado de alta qualidade.</p>
+                </div>
+                <div><h3 class="title-font text-lg font-bold mb-4">Links Úteis</h3><ul class="space-y-2"><li><a href="#page-Sobre Nós" class="nav-link-category text-gray-400 hover:text-amber-500" data-category="Sobre Nós">Sobre Nós</a></li><li><a href="#footer-contact" class="nav-link-category text-gray-400 hover:text-amber-500" data-category="footer-contact">Contato</a></li></ul></div>
+                <div><h3 class="title-font text-lg font-bold mb-4">Minha Conta</h3><ul class="space-y-2"><li><a href="#" class="text-gray-400 hover:text-amber-500">Minha Conta</a></li><li><a href="#" class="text-gray-400 hover:text-amber-500">Meus Pedidos</a></li></ul></div>
+                <div><h3 class="title-font text-lg font-bold mb-4">Informações</h3><ul class="space-y-2"><li><a href="#" id="privacy-policy-link" class="text-gray-400 hover:text-amber-500">Política de Privacidade</a></li><li><a href="#" id="terms-conditions-link" class="text-gray-400 hover:text-amber-500">Termos e Condições</a></li></ul></div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 mb-8">
+                <h3 class="title-font text-2xl font-bold text-center mb-6">Entre em Contato</h3>
+                <div id="footer-contacts" class="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 text-center">
+                    <!-- Contatos do Footer carregados do Firebase -->
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-6 text-center text-gray-400 text-sm">
+                <p>© 2025 ACIREH. Todos os direitos reservados. Criado por <a href="https://www.instagram.com/aem.producoes" target="_blank" class="hover:text-amber-500 hover:underline">A&M Produções</a></p>
+                <button id="installAppBtn" class="hidden mt-4 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm"><i class="fas fa-download mr-2"></i>Instalar App</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODALS -->
+    
+    <!-- Wishlist Modal -->
+    <div id="wishlistModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b dark:border-gray-700 flex justify-between items-center">
+                <h3 class="title-font text-2xl font-bold text-gray-800 dark:text-white">Meus Favoritos</h3>
+                <button class="close-modal-btn text-gray-500 dark:text-gray-400 hover:text-gray-700"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="wishlist-items-container" class="p-6 flex-1 overflow-y-auto">
+                <!-- Wishlist items will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Shopping Cart Sidebar -->
+    <div id="cartSidebar" class="fixed inset-y-0 right-0 w-full md:w-96 bg-white dark:bg-gray-800 shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50"><div class="h-full flex flex-col"><div class="flex justify-between items-center p-4 border-b dark:border-gray-700"><h3 class="title-font text-xl font-bold text-gray-800 dark:text-white">Meu Carrinho</h3><button id="closeCart" class="dark:text-white"><i class="fas fa-times"></i></button></div><div id="cart-items-container" class="flex-1 overflow-y-auto p-4"></div><div id="cart-summary" class="border-t dark:border-gray-700 p-4"></div></div></div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b dark:border-gray-700 flex justify-between items-center">
+                <h3 class="title-font text-2xl font-bold text-gray-800 dark:text-white">Finalizar Pedido</h3>
+                <button class="close-modal-btn text-gray-500 dark:text-gray-400 hover:text-gray-700"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto">
+                <!-- Tabs -->
+                <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button class="checkout-tab active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="delivery">
+                            <i class="fas fa-truck mr-2"></i>Entrega
+                        </button>
+                        <button class="checkout-tab whitespace-nowrap py-4 px-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300 font-medium text-sm" data-tab="contact">
+                            <i class="fab fa-whatsapp mr-2"></i>Contato
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="delivery-content" class="checkout-tab-content">
+                    <form id="deliveryForm">
+                        <h4 class="font-bold text-lg mb-4 text-gray-800 dark:text-white">Informações de Entrega</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="deliveryName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome Completo</label>
+                                <input type="text" id="deliveryName" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white" required>
+                            </div>
+                            <div>
+                                <label for="deliveryPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
+                                <input type="tel" id="deliveryPhone" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white" required>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="deliveryAddress" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Endereço</label>
+                            <textarea id="deliveryAddress" rows="3" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white" required></textarea>
+                        </div>
+                        <div class="mt-4">
+                            <label for="deliveryObs" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
+                            <textarea id="deliveryObs" rows="2" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"></textarea>
+                        </div>
+                        <div class="mt-6 text-right">
+                            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded">Continuar para Pagamento</button>
+                        </div>
+                    </form>
+                    <div id="payment-step-delivery" class="payment-step hidden mt-6 text-center">
+                        <h4 class="font-bold text-lg mb-4 text-gray-800 dark:text-white">Pagamento Seguro via Mercado Pago</h4>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Ao continuar, será redirecionado para o ambiente seguro do Mercado Pago para concluir a sua compra. Aceitamos:</p>
+                        <div class="flex items-center justify-center space-x-4 mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <img src="https://img.icons8.com/color/48/000000/visa.png" alt="Visa" class="h-8" title="Cartão de Crédito/Débito"/>
+                            <img src="https://img.icons8.com/color/48/000000/mastercard.png" alt="Mastercard" class="h-8" title="Cartão de Crédito/Débito"/>
+                            <img src="https://img.icons8.com/fluency/48/pix.png" alt="Pix" class="h-10" title="Pix"/>
+                            <img src="https://img.icons8.com/officel/48/barcode.png" alt="Boleto" class="h-8" title="Boleto Bancário"/>
+                        </div>
+                        <p class="text-amber-600 dark:text-amber-400 font-semibold my-4">Assim que efetuar a compra via PIX, vá para a aba "Contato".</p>
+                        <div id="payment-container-delivery" class="mt-6 flex justify-center">
+                            <!-- Mercado Pago button will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+                 <div id="contact-content" class="checkout-tab-content hidden text-center">
+                    <h4 class="font-bold text-lg mb-4 text-gray-800 dark:text-white">Fale Conosco</h4>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">
+                        Olá cliente Acireh! Se você já finalizou sua compra e quer tirar dúvidas, clique no botão de WhatsApp abaixo que nossa equipe vai te direcionar. Se já fez o pagamento em formato PIX, por gentileza, clique para enviar o comprovante. Obrigado!
+                    </p>
+                    <a href="#" id="whatsapp-contact-btn" target="_blank" class="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                        <i class="fab fa-whatsapp mr-2"></i> Entrar em Contato
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gemini Personal Shopper FAB -->
+    <button id="personalShopperBtn" class="fixed bottom-6 right-6 bg-amber-500 hover:bg-amber-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-2xl transition-transform hover:scale-110 z-30">
+        <i class="fas fa-magic"></i>
+    </button>
+
+    <!-- Gemini Personal Shopper Modal -->
+    <div id="personalShopperModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 class="title-font text-2xl font-bold text-gray-800 dark:text-white">✨ Assistente de Compras Pessoal</h3>
+                    <button class="close-modal-btn text-gray-500 dark:text-gray-400 hover:text-gray-700"><i class="fas fa-times"></i></button>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">Descreva a ocasião ou para quem é o presente, e eu encontrarei as joias perfeitas para si!</p>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto">
+                <form id="shopperForm">
+                    <textarea id="shopperPrompt" class="w-full h-24 p-3 border border-gray-300 dark:border-gray-600 rounded mb-4 dark:bg-gray-700 dark:text-white" placeholder="Ex: 'Procuro um presente de aniversário para a minha mãe, que adora peças delicadas e elegantes.'"></textarea>
+                    <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-3 rounded transition duration-300">
+                        Receber Recomendações
+                    </button>
+                </form>
+                <div id="shopperResults" class="mt-6">
+                    <!-- Results will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Modal for Static Content -->
+    <div id="staticContentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b dark:border-gray-700 flex justify-between items-center">
+                <h3 id="staticContentTitle" class="title-font text-2xl font-bold text-gray-800 dark:text-white"></h3>
+                <button class="close-modal-btn text-gray-500 dark:text-gray-400 hover:text-gray-700"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="staticContentBody" class="p-6 flex-1 overflow-y-auto prose dark:prose-invert max-w-none">
+                <!-- Static content like privacy policy will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Site Message Banner -->
+    <div id="site-message-banner-container" class="fixed inset-0 z-50 p-4 pointer-events-none flex items-center justify-center"></div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] space-y-2"></div>
+
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, getDoc, doc, query, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAq9_QHojEA7y8hoK2SPXooUty8xvdZaBQ",
+            authDomain: "lojaacireh.firebaseapp.com",
+            projectId: "lojaacireh",
+            storageBucket: "lojaacireh.appspot.com",
+            messagingSenderId: "724432670422",
+            appId: "1:724432670422:web:637307af1f2cf6ed604377"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- GLOBAL STATE ---
+        let allProducts = []; // Cache for all products from Firebase
+        let cart = JSON.parse(localStorage.getItem('acirehCart')) || [];
+        let wishlist = JSON.parse(localStorage.getItem('acirehWishlist')) || [];
+        let shippingDetails = { cost: 0, city: null, cep: null, options: [], selected: null };
+        let whatsappLink = '#'; // Global variable for WhatsApp link
+        let shippingPromotion = { isActive: false, minimumAmount: Infinity };
+        let appliedCoupon = null;
+        
+        // --- SELECTORS ---
+        const mainContent = document.getElementById('main-content');
+        const cartBtn = document.getElementById('cartBtn');
+        const closeCartBtn = document.getElementById('closeCart');
+        const cartSidebar = document.getElementById('cartSidebar');
+        const cartCountEls = document.querySelectorAll('.cart-count');
+        const cartItemsContainer = document.getElementById('cart-items-container');
+        const cartSummaryContainer = document.getElementById('cart-summary');
+        
+        const wishlistBtn = document.getElementById('wishlistBtn');
+        const wishlistCountEl = document.getElementById('wishlistCount');
+        const wishlistModal = document.getElementById('wishlistModal');
+        const wishlistItemsContainer = document.getElementById('wishlist-items-container');
+        
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMobileMenuBtn = document.getElementById('closeMobileMenu');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileCategoriesBtn = document.getElementById('mobileCategoriesBtn');
+        
+        const checkoutModal = document.getElementById('checkoutModal');
+        const closeModalBtns = document.querySelectorAll('.close-modal-btn');
+        
+        // Gemini Feature Selectors
+        const personalShopperBtn = document.getElementById('personalShopperBtn');
+        const personalShopperModal = document.getElementById('personalShopperModal');
+        const shopperForm = document.getElementById('shopperForm');
+        const shopperResults = document.getElementById('shopperResults');
+
+        // Checkout Selectors
+        const checkoutTabs = document.querySelectorAll('.checkout-tab');
+        const checkoutTabContents = document.querySelectorAll('.checkout-tab-content');
+        const deliveryForm = document.getElementById('deliveryForm');
+        const whatsappContactBtn = document.getElementById('whatsapp-contact-btn');
+
+        // Search Selectors
+        const desktopSearchForm = document.getElementById('desktopSearchForm');
+        const desktopSearchInput = document.getElementById('desktopSearchInput');
+        const mobileSearchForm = document.getElementById('mobileSearchForm');
+        const mobileSearchInput = document.getElementById('mobileSearchInput');
+        
+        // Theme Toggle Selectors
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        
+        // Static Content Modal Selectors
+        const staticContentModal = document.getElementById('staticContentModal');
+        const staticContentTitle = document.getElementById('staticContentTitle');
+        const staticContentBody = document.getElementById('staticContentBody');
+
+        // --- FIREBASE DATA FETCHING ---
+        
+        /**
+         * Fetches all documents from a specific collection in Firestore.
+         * @param {string} collectionName - The name of the collection.
+         * @returns {Promise<Array>} A promise that resolves to an array of document data.
+         */
+        const fetchCollection = async (collectionName) => {
+            try {
+                const querySnapshot = await getDocs(collection(db, collectionName));
+                return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error(`Error fetching ${collectionName}:`, error);
+                return [];
+            }
+        };
+
+        /**
+         * Fetches a single document from Firestore by its ID.
+         * @param {string} collectionName - The name of the collection.
+         * @param {string} docId - The ID of the document.
+         * @returns {Promise<Object|null>} A promise that resolves to the document data or null.
+         */
+        const fetchDocument = async (collectionName, docId) => {
+            try {
+                const docRef = doc(db, collectionName, docId);
+                const docSnap = await getDoc(docRef);
+                return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+            } catch (error) {
+                console.error(`Error fetching document ${docId} from ${collectionName}:`, error);
+                return null;
+            }
+        };
+
+        /**
+         * Fetches products based on a specific boolean flag (e.g., is_highlight).
+         * @param {string} flagName - The name of the boolean field (e.g., 'is_highlight').
+         * @returns {Promise<Array>} A promise that resolves to an array of product data.
+         */
+        const fetchProductsByFlag = async (flagName) => {
+            try {
+                // MODIFICADO: Adicionado filtro para status ativo
+                const q = query(collection(db, "products"), where(flagName, "==", true), where("status", "==", "ativo"));
+                const querySnapshot = await getDocs(q);
+                return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error(`Error fetching products by flag ${flagName}:`, error);
+                return [];
+            }
+        };
+
+        /**
+         * Fetches products belonging to a specific category.
+         * @param {string} categoryName - The name of the category.
+         * @returns {Promise<Array>} A promise that resolves to an array of product data.
+         */
+        const fetchProductsByCategory = async (categoryName) => {
+            try {
+                // MODIFICADO: Adicionado filtro para status ativo
+                const q = query(collection(db, "products"), where("categories", "array-contains", categoryName), where("status", "==", "ativo"));
+                const querySnapshot = await getDocs(q);
+                return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error(`Error fetching products for category ${categoryName}:`, error);
+                return [];
+            }
+        };
+
+        // --- RENDER FUNCTIONS ---
+        const renderProductCard = (p) => `
+            <div class="product-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 dark:border-gray-700" data-id="${p.id}">
+                <div class="relative">
+                    <img src="${p.image_url}" alt="${p.name}" class="w-full h-64 object-contain p-4" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/400x400/FFF/333?text=Imagem+Indisponível';">
+                    <div class="absolute top-3 right-3">
+                        <button class="wishlist-toggle-btn w-8 h-8 rounded-full bg-white dark:bg-gray-700 shadow flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500" data-product-id="${p.id}">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-medium text-gray-800 dark:text-white mb-1 truncate">${p.name}</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 h-10 overflow-hidden">${p.description || ''}</p>
+                    <div class="text-amber-600 font-bold mt-2">R$ ${p.price.toFixed(2).replace('.', ',')}</div>
+                    <div class="mt-4">
+                        <button class="add-to-cart w-full bg-amber-600 hover:bg-amber-700 text-white text-sm px-4 py-2 rounded-full transition" data-product-id="${p.id}">
+                            <i class="fas fa-shopping-cart mr-1"></i> Adicionar
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+            
+        const renderProductsToContainer = (products, container) => {
+             if (!container) return;
+             if (products.length === 0) {
+                 container.innerHTML = `<p class="col-span-full text-center text-gray-500 dark:text-gray-400 py-10">Nenhum produto encontrado.</p>`;
+             } else {
+                 container.innerHTML = products.map(renderProductCard).join('');
+             }
+        };
+
+        // --- UI UPDATE FUNCTIONS ---
+        const saveState = () => {
+            localStorage.setItem('acirehCart', JSON.stringify(cart));
+            localStorage.setItem('acirehWishlist', JSON.stringify(wishlist));
+        };
+        
+        function showToast(message, type = 'error') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const icon = type === 'success' 
+                ? '<i class="fas fa-check-circle mr-2"></i>' 
+                : '<i class="fas fa-exclamation-circle mr-2"></i>';
+            
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+
+            toast.className = `p-4 rounded-lg shadow-lg text-white flex items-center transform translate-x-full transition-transform duration-300 ${bgColor}`;
+            toast.innerHTML = `${icon} ${message}`;
+
+            toastContainer.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+
+            // Animate out and remove
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        }
+
+        const updateCartUI = async () => {
+            const count = cart.reduce((total, item) => total + item.quantity, 0);
+            cartCountEls.forEach(el => {
+                el.textContent = count;
+                el.classList.toggle('hidden', count === 0);
+            });
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 py-4 text-center">Seu carrinho está vazio</p>';
+                cartSummaryContainer.innerHTML = '';
+                return;
+            }
+
+            const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+            
+            // --- Free Shipping Logic ---
+            const promoDoc = await fetchDocument('shipping_promotions', 'main_promotion');
+            if (promoDoc) {
+                shippingPromotion = promoDoc;
+            }
+
+            let isFreeShipping = false;
+            let freeShippingReason = null;
+            const hasFreeShippingProduct = cart.some(item => item.is_free_shipping);
+
+            if (hasFreeShippingProduct) {
+                isFreeShipping = true;
+                freeShippingReason = 'Você tem um item com frete grátis!';
+            } else if (shippingPromotion.isActive && subtotal >= shippingPromotion.minimumAmount) {
+                isFreeShipping = true;
+                freeShippingReason = `Frete grátis para compras acima de R$ ${shippingPromotion.minimumAmount.toFixed(2).replace('.', ',')}`;
+            }
+            
+            let finalShippingCost = isFreeShipping ? 0 : (shippingDetails.selected ? shippingDetails.selected.price : 0);
+            // --- End of Free Shipping Logic ---
+
+            // --- Coupon Logic ---
+            let discount = 0;
+            if (appliedCoupon) {
+                if (appliedCoupon.type === 'percentage') {
+                    discount = subtotal * (appliedCoupon.value / 100);
+                } else {
+                    discount = appliedCoupon.value;
+                }
+            }
+            // --- End of Coupon Logic ---
+
+            const finalTotal = subtotal - discount + finalShippingCost;
+
+            cartItemsContainer.innerHTML = cart.map(item => `
+                <div class="cart-item flex py-4 border-b dark:border-gray-700" data-id="${item.id}">
+                    <img src="${item.image_url}" alt="${item.name}" class="w-20 h-20 object-contain rounded">
+                    <div class="ml-4 flex-1"><div class="flex justify-between"><h4 class="font-medium text-gray-800 dark:text-white">${item.name}</h4><button class="remove-from-cart text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button></div><div class="flex justify-between items-center mt-2"><div class="flex items-center border dark:border-gray-600 rounded"><button class="update-quantity px-2 py-1 dark:text-white" data-change="-1">-</button><span class="px-2 dark:text-white">${item.quantity}</span><button class="update-quantity px-2 py-1 dark:text-white" data-change="1">+</button></div><div class="font-bold text-amber-600">R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</div></div></div>
+                </div>
+            `).join('');
+            
+            let shippingDetailsHTML = '';
+            if (freeShippingReason) {
+                shippingDetailsHTML = `<p class="text-green-600 font-bold">${freeShippingReason}</p>`;
+            } else if (shippingDetails.options && shippingDetails.options.length > 0) {
+                 shippingDetailsHTML = shippingDetails.options.map(option => `
+                    <label class="flex items-center p-3 border rounded-md cursor-pointer dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input type="radio" name="shipping-option" class="text-amber-600 focus:ring-amber-500" value="${option.code}" ${shippingDetails.selected && shippingDetails.selected.code === option.code ? 'checked' : ''}>
+                        <div class="ml-3 text-sm flex-1">
+                            <div class="font-medium text-gray-900 dark:text-gray-200">${option.name}</div>
+                            <div class="text-gray-500 dark:text-gray-400">Prazo: ${option.deadline} dias</div>
+                        </div>
+                        <div class="font-semibold text-gray-800 dark:text-white">R$ ${option.price.toFixed(2).replace('.',',')}</div>
+                    </label>
+                 `).join('<div class="my-2"></div>');
+            } else if (shippingDetails.cep) { 
+                shippingDetailsHTML = `<p class="text-red-500">Não foram encontradas opções de entrega para este CEP.</p>`;
+            }
+            
+            let shippingCostDisplay;
+            if (freeShippingReason) {
+                shippingCostDisplay = 'Grátis';
+            } else if (shippingDetails.selected) {
+                shippingCostDisplay = `R$ ${finalShippingCost.toFixed(2).replace('.', ',')}`;
+            } else {
+                shippingCostDisplay = 'A calcular';
+            }
+
+            let couponHTML = '';
+            if (appliedCoupon) {
+                couponHTML = `
+                    <div class="flex justify-between items-center text-sm text-green-600 bg-green-50 dark:bg-green-900/50 p-2 rounded-md">
+                        <span>Cupom "${appliedCoupon.code}" aplicado!</span>
+                        <button id="remove-coupon-btn" class="font-bold text-red-500 hover:underline">Remover</button>
+                    </div>
+                `;
+            } else {
+                couponHTML = `
+                    <form id="coupon-form" class="flex gap-2 mb-4">
+                        <input type="text" id="coupon-input" placeholder="Código do cupom" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-white" />
+                        <button type="submit" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white px-4 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 text-sm">Aplicar</button>
+                    </form>
+                `;
+            }
+
+
+            cartSummaryContainer.innerHTML = `
+                <form id="shipping-form" class="flex gap-2 mb-4">
+                    <input type="text" id="cep-input" placeholder="Seu CEP" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-white" />
+                    <button type="submit" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white px-4 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 text-sm">Calcular</button>
+                </form>
+                <div id="shipping-details" class="text-sm mb-4 space-y-2">${shippingDetailsHTML}</div>
+                <div class="mb-4">${couponHTML}</div>
+                <div class="space-y-2 text-gray-800 dark:text-gray-300">
+                    <div class="flex justify-between"><span>Subtotal</span><span class="font-medium">R$ ${subtotal.toFixed(2).replace('.', ',')}</span></div>
+                    <div class="flex justify-between"><span>Frete</span><span id="shipping-cost" class="font-medium">${shippingCostDisplay}</span></div>
+                    ${discount > 0 ? `<div class="flex justify-between text-green-600"><span>Desconto</span><span class="font-medium">- R$ ${discount.toFixed(2).replace('.', ',')}</span></div>` : ''}
+                    <div class="flex justify-between font-bold text-lg border-t dark:border-gray-700 pt-2 mt-2"><span>Total</span><span id="final-total">R$ ${finalTotal.toFixed(2).replace('.', ',')}</span></div>
+                </div>
+                <button id="checkout-btn" class="mt-4 w-full bg-amber-600 hover:bg-amber-700 text-white text-center font-medium py-3 rounded">Finalizar Compra</button>`;
+        };
+
+        const updateWishlistUI = () => {
+            wishlistCountEl.textContent = wishlist.length;
+            wishlistCountEl.classList.toggle('hidden', wishlist.length === 0);
+
+            if (wishlist.length === 0) {
+                wishlistItemsContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 py-10 text-center">A sua lista de favoritos está vazia.</p>';
+                return;
+            }
+            wishlistItemsContainer.innerHTML = wishlist.map(product => `
+                <div class="flex items-center py-4 border-b dark:border-gray-700" data-id="${product.id}">
+                    <img src="${product.image_url}" alt="${product.name}" class="w-24 h-24 object-contain rounded border dark:border-gray-700">
+                    <div class="ml-4 flex-1">
+                        <h4 class="font-bold text-gray-800 dark:text-white">${product.name}</h4>
+                        <p class="text-amber-600 font-bold mt-1">R$ ${product.price.toFixed(2).replace('.',',')}</p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                         <button class="add-to-cart-from-wishlist bg-amber-600 text-white px-3 py-1.5 rounded-full text-sm" data-product-id="${product.id}"><i class="fas fa-shopping-cart mr-2"></i>Adicionar</button>
+                         <button class="wishlist-toggle-btn text-gray-400 hover:text-red-500" data-product-id="${product.id}"><i class="fas fa-trash-alt mr-2"></i>Remover</button>
+                    </div>
+                </div>
+            `).join('');
+        };
+        
+        const updateHeartIcons = () => {
+            document.querySelectorAll('.wishlist-toggle-btn').forEach(heartBtn => {
+                const productId = heartBtn.dataset.productId;
+                if (wishlist.some(item => item.id === productId)) {
+                    heartBtn.classList.add('text-red-500');
+                } else {
+                    heartBtn.classList.remove('text-red-500');
+                }
+            });
+        };
+
+        // --- HANDLERS & LOGIC ---
+        const toggleWishlist = (productId) => {
+            const isInWishlist = wishlist.some(item => item.id === productId);
+            if (isInWishlist) {
+                wishlist = wishlist.filter(item => item.id !== productId);
+            } else {
+                const product = allProducts.find(p => p.id === productId);
+                if (product) {
+                    wishlist.push(product);
+                }
+            }
+            saveState();
+            updateWishlistUI();
+            updateHeartIcons();
+        };
+
+        const handleAddToCart = (productId) => {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+            const existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            saveState();
+            updateCartUI();
+        };
+        
+        const handleCartAction = (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            const cartItemEl = target.closest('.cart-item');
+            const productId = cartItemEl.dataset.id;
+            const item = cart.find(item => item.id === productId);
+
+            if (target.classList.contains('remove-from-cart')) {
+                cart = cart.filter(item => item.id !== productId);
+            } else if (target.classList.contains('update-quantity')) {
+                const change = parseInt(target.dataset.change, 10);
+                if (item) {
+                    item.quantity += change;
+                    if (item.quantity <= 0) cart = cart.filter(i => i.id !== productId);
+                }
+            }
+            saveState();
+            updateCartUI();
+        };
+
+        const handleShippingCalculation = async (e) => {
+            e.preventDefault();
+            const cepInput = document.getElementById('cep-input');
+            const cep = cepInput.value.replace(/\D/g, '');
+            
+            if (cep.length !== 8) {
+                shippingDetails = { cost: 0, city: null, cep: cep, options: [], selected: null };
+                updateCartUI(); 
+                const detailsContainer = document.getElementById('shipping-details');
+                if(detailsContainer) detailsContainer.innerHTML = `<p class="text-red-500">CEP inválido. Por favor, insira 8 dígitos.</p>`;
+                return;
+            }
+
+            const detailsContainer = document.getElementById('shipping-details');
+            if (detailsContainer) detailsContainer.innerHTML = `<div class="flex justify-center py-4"><div class="loader"></div></div>`;
+
+            try {
+                const config = await fetchDocument('site_config', 'main');
+                const originCep = config.origin_cep;
+
+                if (!originCep) {
+                    throw new Error("CEP de origem não configurado.");
+                }
+
+                // A função de cálculo de frete estará disponível em /api/calculateShipping
+                // após o deploy na Vercel.
+                const vercelFunctionUrl = 'https://lojaacireh.vercel.app/api/calculateShipping';
+
+
+                const response = await fetch(vercelFunctionUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        originCep: originCep,
+                        destinationCep: cep,
+                        items: cart
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao calcular o frete.');
+                }
+
+                const options = await response.json();
+                shippingDetails = {
+                    cep: cep,
+                    options: options.filter(opt => !opt.error),
+                    selected: null,
+                    cost: 0,
+                    city: null // City is not returned by Correios API, so we clear it
+                };
+
+            } catch (error) {
+                console.error("Erro no cálculo de frete:", error);
+                shippingDetails = { cost: 0, city: null, cep: cep, options: [], selected: null };
+                showToast("Não foi possível calcular o frete. Verifique se o URL da função está correto.", 'error');
+            } finally {
+                updateCartUI();
+            }
+        };
+
+        const handleApplyCoupon = async (e) => {
+            e.preventDefault();
+            const codeInput = document.getElementById('coupon-input');
+            const code = codeInput.value.trim().toUpperCase();
+            if (!code) return;
+
+            const couponDoc = await fetchDocument('coupons', code);
+
+            if (couponDoc && couponDoc.isActive) {
+                if (couponDoc.expiresAt && couponDoc.expiresAt.toDate() < new Date()) {
+                    showToast('Este cupom já expirou.', 'error');
+                    appliedCoupon = null;
+                } else {
+                    appliedCoupon = couponDoc;
+                    showToast('Cupom aplicado com sucesso!', 'success');
+                }
+            } else {
+                showToast('Cupom inválido ou inativo.', 'error');
+                appliedCoupon = null;
+            }
+            updateCartUI();
+        };
+
+        const handleRemoveCoupon = () => {
+            appliedCoupon = null;
+            showToast('Cupom removido.', 'success');
+            updateCartUI();
+        };
+
+        const toggleModal = (modal, show) => modal.classList.toggle('hidden', !show);
+
+        const showPage = async (category) => {
+            document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
+            const targetPage = document.getElementById(`page-${category}`);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+                
+                // If the page content is empty, load it
+                const productListContainer = document.getElementById(`product-list-${category}`);
+                if (productListContainer && productListContainer.innerHTML.trim() === '') {
+                     productListContainer.innerHTML = '<div class="col-span-full flex justify-center py-10"><div class="loader"></div></div>';
+                     let productsToRender = [];
+                     if(category === 'Destaques') {
+                         productsToRender = await fetchProductsByFlag('is_highlight');
+                     } else if (category === 'Novidades') {
+                         productsToRender = await fetchProductsByFlag('is_new_arrival');
+                     } else if (category === 'Promoções') {
+                         productsToRender = await fetchProductsByFlag('is_on_sale');
+                     } else if (category !== 'Sobre Nós' && category !== 'Pesquisa') {
+                         productsToRender = await fetchProductsByCategory(category);
+                     }
+                     renderProductsToContainer(productsToRender, productListContainer);
+                     updateHeartIcons();
+                }
+            }
+        };
+
+        // --- INITIAL LOAD & POPULATE FUNCTIONS ---
+        const populateSiteConfig = async () => {
+            const config = await fetchDocument('site_config', 'main');
+            if (!config) return;
+
+            // Update Logos
+            const defaultLogo = "https://res.cloudinary.com/dae7br7lb/image/upload/v1754489172/1_ntperj.png";
+            const logoUrl = config.logo_url || defaultLogo;
+            document.getElementById('header-logo').src = logoUrl;
+            document.getElementById('mobile-menu-logo').src = logoUrl;
+            document.getElementById('footer-logo').src = logoUrl;
+            
+            // Update Favicon
+            const faviconUrl = config.favicon_url;
+            if(faviconUrl) {
+                let link = document.querySelector("link[rel~='icon']");
+                if (!link) {
+                    link = document.createElement('link');
+                    link.rel = 'icon';
+                    document.getElementsByTagName('head')[0].appendChild(link);
+                }
+                link.href = faviconUrl;
+            }
+
+
+            const themeColor = config.theme_color || '#D4AF37';
+            document.querySelector('meta[name="theme-color"]').content = themeColor;
+            document.getElementById('hero-title').textContent = config.hero_title || '';
+            document.getElementById('hero-subtitle').textContent = config.hero_subtitle || '';
+            
+            const newsletterSection = document.getElementById('newsletter-section');
+            if (config.is_whatsapp_group_enabled && config.whatsapp_group_link) {
+                document.getElementById('whatsapp-group-link').href = config.whatsapp_group_link;
+                newsletterSection.classList.remove('hidden');
+            } else {
+                newsletterSection.classList.add('hidden');
+            }
+            
+            const videoEl = document.getElementById('hero-video');
+            if (config.hero_video_url) {
+                const sourceEl = document.createElement('source');
+                sourceEl.src = config.hero_video_url;
+                sourceEl.type = 'video/mp4';
+                videoEl.innerHTML = ''; // Clear any existing sources
+                videoEl.appendChild(sourceEl);
+                videoEl.load(); // Important to load the new source
+            }
+
+            // Apply dynamic theme color
+            const style = document.createElement('style');
+            const darkerThemeColor = (hex, percent) => {
+                hex = hex.replace(/^#/, '');
+                let r = parseInt(hex.substring(0, 2), 16);
+                let g = parseInt(hex.substring(2, 4), 16);
+                let b = parseInt(hex.substring(4, 6), 16);
+                r = Math.floor(r * (100 - percent) / 100);
+                g = Math.floor(g * (100 - percent) / 100);
+                b = Math.floor(b * (100 - percent) / 100);
+                const toHex = c => ('00' + c.toString(16)).slice(-2);
+                return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+            };
+            const hoverColor = darkerThemeColor(themeColor, 10);
+
+            style.innerHTML = `
+                .bg-amber-600 { background-color: ${themeColor}; }
+                .hover\\:bg-amber-700:hover { background-color: ${hoverColor}; }
+                .text-amber-600 { color: ${themeColor}; }
+                .hover\\:text-amber-600:hover { color: ${themeColor}; }
+                .hover\\:border-amber-600:hover { border-color: ${themeColor}; }
+                .checkout-tab.active { border-color: ${themeColor}; color: ${themeColor}; }
+                ::-webkit-scrollbar-thumb { background: ${themeColor}; }
+                ::-webkit-scrollbar-thumb:hover { background: ${hoverColor}; }
+                #personalShopperBtn { background-color: ${themeColor}; }
+                #personalShopperBtn:hover { background-color: ${hoverColor}; }
+            `;
+            document.head.appendChild(style);
+        };
+        
+        const populateContacts = async () => {
+            const contacts = await fetchDocument('contacts', 'social_media');
+            if (!contacts) return;
+            
+            whatsappLink = contacts.whatsapp || '#'; // Store the WhatsApp link globally
+            whatsappContactBtn.href = whatsappLink; // Set the link on the checkout contact button
+
+            const topBarContainer = document.getElementById('top-bar-contacts');
+            const footerContainer = document.getElementById('footer-contacts');
+            
+            topBarContainer.innerHTML = `
+                <a href="${contacts.whatsapp || '#'}" target="_blank" class="hover:text-amber-300"><i class="fab fa-whatsapp mr-1"></i> ${contacts.phone_number || ''}</a>
+                <a href="mailto:${contacts.email || '#'}" class="hover:text-amber-300"><i class="fas fa-envelope mr-1"></i> ${contacts.email || ''}</a>
+            `;
+
+            footerContainer.innerHTML = `
+                <a href="${contacts.whatsapp || '#'}" target="_blank" class="text-gray-400 hover:text-amber-500 transition-colors">
+                    <i class="fab fa-whatsapp text-4xl"></i>
+                    <p class="mt-2 text-sm">${contacts.phone_number || 'WhatsApp'}</p>
+                </a>
+                <a href="mailto:${contacts.email || '#'}" class="text-gray-400 hover:text-amber-500 transition-colors">
+                    <i class="fas fa-envelope text-4xl"></i>
+                    <p class="mt-2 text-sm">${contacts.email || 'Email'}</p>
+                </a>
+                <a href="${contacts.facebook || '#'}" target="_blank" class="text-gray-400 hover:text-amber-500 transition-colors">
+                    <i class="fab fa-facebook text-4xl"></i>
+                    <p class="mt-2 text-sm">Facebook</p>
+                </a>
+                <a href="${contacts.instagram || '#'}" target="_blank" class="text-gray-400 hover:text-amber-500 transition-colors">
+                    <i class="fab fa-instagram text-4xl"></i>
+                    <p class="mt-2 text-sm">Instagram</p>
+                </a>
+            `;
+        };
+
+        const populateTestimonials = async () => {
+            const testimonials = await fetchCollection('testimonials');
+            const container = document.getElementById('testimonials-container');
+            if (!container) return;
+
+            if(testimonials.length > 0) {
+                container.innerHTML = testimonials.map(t => {
+                    let stars = '';
+                    for (let i = 0; i < 5; i++) {
+                        if (i < t.rating) {
+                            stars += '<i class="fas fa-star"></i>';
+                        } else {
+                            stars += '<i class="far fa-star"></i>';
+                        }
+                    }
+                    return `
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <div class="text-amber-500 text-xl mb-4">${stars}</div>
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">"${t.quote}"</p>
+                            <div class="flex items-center">
+                                <img src="${t.author_image_url}" alt="${t.author_name}" class="w-10 h-10 rounded-full object-cover mr-3">
+                                <div>
+                                    <h4 class="font-medium text-gray-800 dark:text-white">${t.author_name}</h4>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">${t.author_location}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                container.innerHTML = '<p class="col-span-full text-center text-gray-500 dark:text-gray-400">Seja o primeiro a deixar um testemunho!</p>';
+            }
+        };
+        
+        const populateAboutUs = async () => {
+            const about = await fetchDocument('pages', 'about_us');
+            const container = document.getElementById('about-us-content');
+            if(!about || !container) return;
+
+            container.innerHTML = `
+                <h2 class="title-font text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-8 text-center">${about.title}</h2>
+                <img src="${about.image_url}" alt="Joia ACIREH em destaque" class="rounded-lg shadow-lg mb-8 mx-auto w-full max-w-lg object-contain">
+                <div class="text-gray-700 dark:text-gray-300 space-y-6">
+                    <div>
+                        <h3 class="title-font text-2xl font-semibold text-gray-800 dark:text-white mb-2">${about.history_title}</h3>
+                        <p>${about.history_text}</p>
+                    </div>
+                    <div>
+                        <h3 class="title-font text-2xl font-semibold text-gray-800 dark:text-white mb-2">${about.mission_title}</h3>
+                        <p>${about.mission_text}</p>
+                    </div>
+                    <div>
+                        <h3 class="title-font text-2xl font-semibold text-gray-800 dark:text-white mb-2">${about.values_title}</h3>
+                        <p>${about.values_text.replace(/\n/g, '<br>')}</p>
+                    </div>
+                </div>
+            `;
+        };
+        
+        const populateOurJewels = async () => {
+            const jewels = await fetchCollection('our_jewels');
+            const scroller = document.querySelector('#our-jewels-scroller-inner').parentElement;
+            const ourJewelsScroller = document.getElementById('our-jewels-scroller-inner');
+            if (ourJewelsScroller && jewels.length > 0) {
+                const jewelsHTML = jewels.map(p => `
+                    <div class="image-item flex-shrink-0 w-64 h-64 rounded-xl overflow-hidden shadow-lg relative group">
+                        <img src="${p.image_url}" alt="${p.name}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy"/>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                            <span class="text-white font-semibold text-lg">${p.name}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                if (jewels.length > 4) {
+                    ourJewelsScroller.innerHTML = jewelsHTML + jewelsHTML;
+                    scroller.setAttribute('data-animated', 'true');
+                } else {
+                    ourJewelsScroller.innerHTML = jewelsHTML;
+                    scroller.setAttribute('data-animated', 'false');
+                }
+
+            } else if (ourJewelsScroller) {
+                 ourJewelsScroller.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400">Nenhuma joia em destaque no momento.</p>';
+                 scroller.setAttribute('data-animated', 'false');
+            }
+        }
+
+        const populateInitialProducts = async () => {
+            const allProductsFromDB = await fetchCollection('products');
+            // MODIFICADO: Filtra produtos inativos ou sem estoque
+            allProducts = allProductsFromDB.filter(p => p.status === 'ativo' && p.stock > 0);
+
+            // Populate Highlights Scroller
+            const highlightProducts = allProducts.filter(p => p.is_highlight);
+            const scrollerContainer = document.getElementById('product-list-Destaques');
+            
+            if (scrollerContainer) {
+                const scroller = scrollerContainer.parentElement;
+                if (highlightProducts.length > 0) {
+                    const productHTML = highlightProducts.map(renderProductCard).join('');
+                    if (highlightProducts.length > 4) {
+                        scrollerContainer.innerHTML = productHTML + productHTML;
+                        scroller.setAttribute('data-animated', 'true');
+                    } else {
+                        scrollerContainer.innerHTML = productHTML;
+                        scroller.setAttribute('data-animated', 'false');
+                    }
+                } else {
+                    scrollerContainer.innerHTML = '<p class="col-span-full text-center text-gray-500 dark:text-gray-400">Nenhum produto em destaque no momento.</p>';
+                    scroller.setAttribute('data-animated', 'false');
+                }
+            }
+            
+            updateHeartIcons();
+        };
+
+        const populateCategories = async () => {
+            const categories = await fetchCollection('categories');
+            const desktopContainer = document.getElementById('desktop-categories-dropdown');
+            const mobileContainer = document.getElementById('mobile-categories-list');
+            const dynamicPagesContainer = document.getElementById('dynamic-category-pages-container');
+
+            if (!desktopContainer || !mobileContainer) return;
+
+            let desktopHTML = '';
+            let mobileHTML = '';
+            let pagesHTML = '';
+
+            categories.forEach(cat => {
+                desktopHTML += `<a href="#page-${cat.name}" class="nav-link-category block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-gray-700" data-category="${cat.name}">${cat.name}</a>`;
+                mobileHTML += `<a href="#page-${cat.name}" class="nav-link-category block py-2 text-gray-600 dark:text-gray-400" data-category="${cat.name}">${cat.name}</a>`;
+                pagesHTML += `
+                    <section id="page-${cat.name}" class="page-content py-12 bg-white dark:bg-gray-900 hidden">
+                        <div class="container mx-auto px-4">
+                            <h2 class="title-font text-3xl font-bold text-gray-800 dark:text-white mb-8">${cat.name}</h2>
+                            <div id="product-list-${cat.name}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+                        </div>
+                    </section>
+                `;
+            });
+
+            desktopContainer.innerHTML = desktopHTML;
+            mobileContainer.innerHTML = mobileHTML;
+            dynamicPagesContainer.innerHTML = pagesHTML;
+
+            // Re-attach event listeners to the newly created category links
+            document.querySelectorAll('.nav-link-category').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const category = e.currentTarget.dataset.category;
+                    
+                    if (category === 'footer-contact') {
+                        document.getElementById('footer-contact').scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        showPage(category);
+                        document.getElementById('main-content').scrollIntoView();
+                    }
+
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                });
+            });
+        };
+
+        const populateSiteMessage = async () => {
+            const msgDoc = await fetchDocument('site_messages', 'live_message');
+            if (!msgDoc || !msgDoc.isActive) return;
+
+            const now = new Date();
+            const expires = msgDoc.expiresAt ? msgDoc.expiresAt.toDate() : null;
+            if (expires && expires < now) return;
+
+            const container = document.getElementById('site-message-banner-container');
+            container.className = 'fixed inset-0 z-50 p-4 pointer-events-none flex items-center justify-center'; // Center the container
+
+            const banner = document.createElement('div');
+            banner.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-xl flex flex-col max-w-sm w-full pointer-events-auto cursor-move relative';
+
+            let mediaHTML = '';
+            if (msgDoc.media_url) {
+                if (/\.(mp4|webm|ogg)$/i.test(msgDoc.media_url)) {
+                    mediaHTML = `
+                        <div class="relative">
+                            <video src="${msgDoc.media_url}" autoplay loop muted class="w-full h-auto rounded-t-lg"></video>
+                            <button class="mute-btn absolute bottom-2 right-2 bg-black bg-opacity-50 text-white rounded-full w-8 h-8 flex items-center justify-center">
+                                <i class="fas fa-volume-mute"></i>
+                            </button>
+                        </div>`;
+                } else {
+                    mediaHTML = `<img src="${msgDoc.media_url}" class="w-full h-auto rounded-t-lg" alt="Mídia Promocional">`;
+                }
+            }
+
+            banner.innerHTML = `
+                <div class="p-4 flex items-start gap-4">
+                    ${msgDoc.logo_url ? `<img src="${msgDoc.logo_url}" class="h-10 w-10 object-contain rounded-full">` : ''}
+                    <div class="flex-1">
+                        <h4 class="font-bold text-gray-800 dark:text-white">${msgDoc.title}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">${msgDoc.content}</p>
+                    </div>
+                    <button class="close-banner-btn text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 text-xl cursor-pointer">&times;</button>
+                </div>
+                ${mediaHTML}
+            `;
+            
+            container.appendChild(banner);
+
+            // Drag logic
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            const dragStart = (e) => {
+                if (e.target.closest('button')) return; // Don't drag if clicking on a button
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+                if (e.target === banner || banner.contains(e.target)) {
+                    isDragging = true;
+                }
+            };
+
+            const dragEnd = () => {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+            };
+
+            const drag = (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    setTranslate(currentX, currentY, banner);
+                }
+            };
+            
+            const setTranslate = (xPos, yPos, el) => {
+                el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+            };
+
+            banner.addEventListener('mousedown', dragStart);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('mousemove', drag);
+
+            const closeBanner = () => {
+                banner.remove();
+                // Clean up event listeners
+                document.removeEventListener('mouseup', dragEnd);
+                document.removeEventListener('mousemove', drag);
+            };
+
+            banner.querySelector('.close-banner-btn').addEventListener('click', closeBanner);
+            
+            const muteBtn = banner.querySelector('.mute-btn');
+            if (muteBtn) {
+                const video = banner.querySelector('video');
+                const icon = muteBtn.querySelector('i');
+                muteBtn.addEventListener('click', () => {
+                    video.muted = !video.muted;
+                    icon.className = video.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+                });
+            }
+
+            const duration = (msgDoc.duration || 10) * 1000;
+            setTimeout(() => {
+                 if (document.body.contains(banner)) {
+                      closeBanner();
+                 }
+            }, duration);
+        };
+
+        // --- EVENT LISTENERS ---
+        mainContent.addEventListener('click', (e) => {
+            const target = e.target;
+            const addToCartBtn = target.closest('.add-to-cart');
+            const wishlistBtn = target.closest('.wishlist-toggle-btn');
+
+            if (addToCartBtn) {
+                handleAddToCart(addToCartBtn.dataset.productId);
+            }
+            if (wishlistBtn) {
+                toggleWishlist(wishlistBtn.dataset.productId);
+            }
+        });
+        
+        wishlistItemsContainer.addEventListener('click', (e) => {
+            const addToCartBtn = e.target.closest('.add-to-cart-from-wishlist');
+            const removeBtn = e.target.closest('.wishlist-toggle-btn');
+            
+            if (addToCartBtn) {
+                handleAddToCart(addToCartBtn.dataset.productId);
+                toggleModal(wishlistModal, false);
+                cartSidebar.classList.remove('translate-x-full');
+            }
+            if (removeBtn) {
+                toggleWishlist(removeBtn.dataset.productId);
+            }
+        });
+
+        const handleSearch = (query) => {
+             const searchTerm = query.toLowerCase();
+             const searchResults = allProducts.filter(p => 
+                 p.name.toLowerCase().includes(searchTerm) || 
+                 (p.description && p.description.toLowerCase().includes(searchTerm))
+             );
+             
+             document.getElementById('search-term').textContent = query;
+             const resultsContainer = document.getElementById('product-list-Pesquisa');
+             
+             renderProductsToContainer(searchResults, resultsContainer);
+             updateHeartIcons();
+             showPage('Pesquisa');
+        };
+
+        desktopSearchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = desktopSearchInput.value.trim();
+            if (query) handleSearch(query);
+        });
+
+        mobileSearchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = mobileSearchInput.value.trim();
+            if (query) {
+                handleSearch(query);
+                mobileMenu.classList.add('hidden');
+            }
+        });
+        
+        const showStaticContent = async (docId) => {
+            const content = await fetchDocument('pages', docId);
+            if(content) {
+                staticContentTitle.textContent = content.title;
+                staticContentBody.innerHTML = content.content.replace(/\n/g, '<br/>');
+                toggleModal(staticContentModal, true);
+            }
+        };
+
+        document.getElementById('privacy-policy-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showStaticContent('privacy_policy');
+        });
+
+        document.getElementById('terms-conditions-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showStaticContent('terms_conditions');
+        });
+
+        // --- All other event listeners and functions from the original script that do not depend on Firebase data ---
+        // (Cart, Modals, Theme, PWA, Checkout, etc.)
+        cartBtn.addEventListener('click', () => cartSidebar.classList.remove('translate-x-full'));
+        closeCartBtn.addEventListener('click', () => cartSidebar.classList.add('translate-x-full'));
+        cartItemsContainer.addEventListener('click', handleCartAction);
+        cartSummaryContainer.addEventListener('click', (e) => {
+            if (e.target.id === 'checkout-btn') {
+                cartSidebar.classList.add('translate-x-full');
+                toggleModal(checkoutModal, true);
+            }
+            if (e.target.id === 'remove-coupon-btn') {
+                handleRemoveCoupon();
+            }
+            if (e.target.name === 'shipping-option') {
+                const selectedOption = shippingDetails.options.find(opt => opt.code === e.target.value);
+                if (selectedOption) {
+                    shippingDetails.selected = selectedOption;
+                    shippingDetails.cost = selectedOption.price;
+                    updateCartUI();
+                }
+            }
+        });
+        cartSummaryContainer.addEventListener('submit', (e) => {
+            if (e.target.id === 'shipping-form') {
+                handleShippingCalculation(e);
+            }
+            if (e.target.id === 'coupon-form') {
+                handleApplyCoupon(e);
+            }
+        });
+
+        wishlistBtn.addEventListener('click', () => {
+            updateWishlistUI();
+            toggleModal(wishlistModal, true);
+        });
+
+        mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.remove('hidden'));
+        closeMobileMenuBtn.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        mobileCategoriesBtn.addEventListener('click', () => {
+            document.getElementById('mobile-categories-list').classList.toggle('hidden');
+            mobileCategoriesBtn.querySelector('i').classList.toggle('rotate-180');
+        });
+
+        closeModalBtns.forEach(btn => btn.addEventListener('click', () => toggleModal(btn.closest('.fixed'), false)));
+        
+        // Checkout Logic
+        checkoutTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                checkoutTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                checkoutTabContents.forEach(content => {
+                    content.classList.toggle('hidden', content.id !== `${targetTab}-content`);
+                });
+            });
+        });
+
+        const initiateMercadoPago = async (formElement, paymentStepId, paymentContainerId) => {
+             if (cart.length === 0) {
+                 showToast("O seu carrinho está vazio.", 'error');
+                 return;
+             }
+
+             const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+             let discount = 0;
+            if (appliedCoupon) {
+                if (appliedCoupon.type === 'percentage') {
+                    discount = subtotal * (appliedCoupon.value / 100);
+                } else {
+                    discount = appliedCoupon.value;
+                }
+            }
+             const finalTotal = subtotal - discount + shippingDetails.cost;
+
+             const orderData = {
+                 date: serverTimestamp(),
+                 status: 'Pendente',
+                 total: finalTotal,
+                 items: cart,
+                 deliveryType: 'Entrega',
+                 customerName: document.getElementById('deliveryName').value,
+                 customerPhone: document.getElementById('deliveryPhone').value,
+                 customerAddress: document.getElementById('deliveryAddress').value,
+                 observations: document.getElementById('deliveryObs').value,
+                 coupon: appliedCoupon ? { code: appliedCoupon.code, value: discount } : null
+             };
+
+             try {
+                 const docRef = await addDoc(collection(db, "orders"), orderData);
+                 console.log("Pedido registado com o ID: ", docRef.id);
+             } catch (e) {
+                 console.error("Erro ao adicionar o documento: ", e);
+                 showToast("Erro ao salvar o pedido no banco de dados.", 'error');
+                 return; // Stop if order fails to save
+             }
+
+             const items = cart.map(item => ({
+                 title: item.name,
+                 quantity: item.quantity,
+                 unit_price: item.price
+             }));
+
+             if (shippingDetails.cost > 0) {
+                 items.push({
+                     title: "Custo de Envio",
+                     quantity: 1,
+                     unit_price: shippingDetails.cost,
+                     category_id: "shipping"
+                 });
+             }
+            // Apply discount as a negative value item for Mercado Pago
+            if (discount > 0) {
+                items.push({
+                    title: `Desconto (${appliedCoupon.code})`,
+                    quantity: 1,
+                    unit_price: -discount,
+                    category_id: "discount"
+                });
+            }
+
+             const paymentStep = document.getElementById(paymentStepId);
+             const paymentContainer = document.getElementById(paymentContainerId);
+
+             formElement.style.display = 'none';
+             paymentStep.classList.remove('hidden');
+             paymentContainer.innerHTML = '<div class="loader"></div></div>';
+
+             try {
+                const MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-1562506367918647-080611-d79ae2e1e50eff4675a33aa691be5f9e-235640373";
+                 const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
+                     method: "POST",
+                     headers: {
+                         "Authorization": `Bearer ${MERCADO_PAGO_ACCESS_TOKEN}`,
+                         "Content-Type": "application/json"
+                     },
+                     body: JSON.stringify({ items: items })
+                 });
+
+                 if (!response.ok) {
+                     throw new Error(`API do Mercado Pago respondeu com o estado: ${response.status}`);
+                 }
+
+                 const preference = await response.json();
+                 paymentContainer.innerHTML = '';
+                 
+                const MERCADO_PAGO_PUBLIC_KEY = "APP_USR-cfb4ff71-b1f9-4ea3-8f5b-23d584486849";
+                 const mp = new MercadoPago(MERCADO_PAGO_PUBLIC_KEY);
+                 mp.checkout({
+                     preference: { id: preference.id },
+                     render: {
+                         container: `#${paymentContainer.id}`,
+                         label: 'Pagar com Segurança'
+                     }
+                 });
+
+             } catch (error) {
+                 console.error("Erro ao criar preferência de pagamento:", error);
+                 paymentContainer.innerHTML = '<p class="text-red-500">Não foi possível iniciar o pagamento. Tente novamente.</p>';
+             }
+        };
+
+        deliveryForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!shippingDetails.cep) {
+                showToast('É obrigatório calcular o frete para a modalidade de entrega.', 'error');
+                toggleModal(checkoutModal, false);
+                cartSidebar.classList.remove('translate-x-full');
+                return;
+            }
+            initiateMercadoPago(deliveryForm, 'payment-step-delivery', 'payment-container-delivery');
+        });
+        
+        // --- GEMINI PERSONAL SHOPPER ---
+        personalShopperBtn.addEventListener('click', () => toggleModal(personalShopperModal, true));
+        
+        shopperForm.addEventListener('submit', (e) => { 
+            e.preventDefault(); 
+            const prompt = document.getElementById('shopperPrompt').value; 
+            if (prompt.trim()) { 
+                getRecommendations(prompt.trim()); 
+            } 
+        });
+
+        async function getRecommendations(userPrompt) {
+            shopperResults.innerHTML = '<div class="flex justify-center items-center h-full"><div class="loader"></div></div>';
+            
+            const apiKey = "AIzaSyDjTM_f7Vmuyi0J8eN0U0L0EJEI7tSsG44";
+            
+            if (!apiKey || apiKey === "SUA_CHAVE_API_GEMINI") {
+                shopperResults.innerHTML = `<div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-700"><h4 class="font-bold">API Key Faltando</h4><p>Por favor, adicione sua chave de API do Google AI Studio no código para usar o assistente.</p></div>`;
+                return;
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+
+            const productListForPrompt = allProducts.map(p => `ID: ${p.id}, Nome: ${p.name}, Preço: R$${p.price.toFixed(2)}, Categoria: ${(p.categories || []).join(', ')}, Descrição: ${p.description || ''}`).join('; ');
+            
+            const fullPrompt = `Você é um personal shopper de uma loja de semijoias de luxo chamada ACIREH. O seu tom é sofisticado, prestativo e elegante. Um cliente pediu ajuda. O pedido dele é: "${userPrompt}".
+              Com base na lista de produtos disponíveis, recomende até 3 produtos que melhor se adequam ao pedido.
+              Responda APENAS com um objeto JSON válido, sem nenhum outro texto antes ou depois.
+              O objeto JSON deve ter uma única chave chamada "recommendations", que é um array de objetos.
+              Cada objeto no array deve ter duas chaves: "productId" (o ID exato do produto) e "justification" (uma justificação curta e convincente).
+              Produtos disponíveis: ${productListForPrompt}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: fullPrompt }] }]
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("API Error Body:", errorBody);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (!result.candidates || !result.candidates[0].content.parts[0].text) {
+                    throw new Error("Resposta da API inválida.");
+                }
+
+                const recommendationsText = result.candidates[0].content.parts[0].text;
+                
+                const cleanedText = recommendationsText.replace(/```json\s*|```/g, '').trim();
+
+                const recommendationsData = JSON.parse(cleanedText); 
+                const recommendations = recommendationsData.recommendations;
+
+                displayRecommendations(recommendations);
+
+            } catch (error) {
+                console.error("Error fetching recommendations:", error);
+                shopperResults.innerHTML = '<p class="text-red-500 text-center">Ocorreu um erro ao buscar recomendações. Por favor, tente novamente.</p>';
+            }
+        }
+
+        function displayRecommendations(recommendations) {
+            if (!recommendations || recommendations.length === 0) {
+                shopperResults.innerHTML = '<p class="text-center text-gray-600">Não encontrei uma recomendação. Tente descrever de outra forma.</p>';
+                return;
+            }
+            shopperResults.innerHTML = '<h4 class="font-bold text-lg mb-4 dark:text-white">As minhas sugestões para si:</h4>' + recommendations.map(rec => {
+                const product = allProducts.find(p => p.id === rec.productId);
+                if (!product) return '';
+                return `<div class="border dark:border-gray-700 rounded-lg p-4 mb-4 flex flex-col sm:flex-row items-start gap-4"><img src="${product.image_url}" alt="${product.name}" class="w-24 h-24 object-contain rounded border dark:border-gray-600"><div class="flex-1"><h5 class="font-bold dark:text-white">${product.name} - R$ ${product.price.toFixed(2).replace('.',',')}</h5><p class="text-gray-700 dark:text-gray-300 my-2">${rec.justification}</p><div class="flex items-center gap-2 mt-2"><button class="add-rec-to-cart text-sm bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-full" data-id="${product.id}"><i class="fas fa-shopping-cart mr-1"></i> Adicionar</button></div></div></div>`;
+            }).join('');
+        }
+        
+        shopperResults.addEventListener('click', (e) => {
+            const cartButton = e.target.closest('.add-rec-to-cart');
+            if(cartButton){ handleAddToCart(cartButton.dataset.id); toggleModal(personalShopperModal, false); cartSidebar.classList.remove('translate-x-full'); }
+        });
+
+        // --- THEME & PWA (NO CHANGE) ---
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                }
+            } else {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            }
+        });
+        let deferredPrompt;
+        const installAppBtn = document.getElementById('installAppBtn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installAppBtn.classList.remove('hidden');
+        });
+        installAppBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installAppBtn.classList.add('hidden');
+            }
+        });
+
+        // --- INITIALIZATION ---
+        const initializeApp = async () => {
+            const promoDoc = await fetchDocument('shipping_promotions', 'main_promotion');
+            if (promoDoc) {
+                shippingPromotion = promoDoc;
+            }
+
+            populateSiteConfig();
+            populateContacts();
+            populateTestimonials();
+            populateAboutUs();
+            populateInitialProducts(); 
+            populateOurJewels(); // <-- Adicionado aqui
+            populateCategories(); 
+            populateSiteMessage();
+            
+            updateCartUI();
+            updateWishlistUI();
+        };
+
+        initializeApp();
+    });
+    </script>
+</body>
+</html>
